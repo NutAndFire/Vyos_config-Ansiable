@@ -75,26 +75,23 @@
                 description: IPv4 WAN -> LOCAL rule set
                 default_action: drop
                 rules:
-                  - number: 5
+                  - number: 1
                     action: accept
                     state:
                       established: yes
                       related: yes
                     description: "Allow EST/Related Traffic"
-                  - number: 20
-                    protocol: 'icmp'
+                  - number: 2
+                    action: drop
                     state:
-                      new: yes
-                    action: accept
-                    description: "Allow NEW Traffic"
+                      invalid: yes                    
                   - number: 30
                     protocol: 'ospf'
                     action: accept
                     state:
                       new: yes
                     description: "Allow NEW Traffic"
-                  - number: 40
-                    ipsec: match-ipsec
+                  - number: 100
                     action: accept
                     protocol: 'icmp'
                   - number: 200
