@@ -1,0 +1,200 @@
+---
+
+- hosts: R1
+  gather_facts: 'no'
+  
+  tasks:
+    - name: Create Loopback
+      vyos.vyos.vyos_interfaces:
+        config:
+          - name: lo
+            description: "Loopback created"
+            enabled: true
+    - name: Create Ethernet
+      vyos.vyos.vyos_interfaces:
+        config:
+          - name: eth1
+            description: "Wan Link 1"
+            enabled: true
+          - name: eth2
+            description: "Lan Link"
+            enabled: true
+    - name: Add IP Address
+      vyos.vyos.vyos_l3_interfaces:
+        config:
+          - name: lo
+            ipv4:
+            - address: 1.1.1.1/32
+          - name: eth1
+            ipv4:
+            - address: 50.1.1.1/30
+          - name: eth2
+            ipv4:
+            - address: 10.1.1.1/24
+    - name: Config OSPFv2
+      vyos.vyos.vyos_ospfv2:
+        config:
+          parameters:
+            router_id: 1.1.1.1
+          areas:
+            - area_id: '0'
+              network:
+              - address: 50.1.1.0/30
+              - address: 1.1.1.1/32
+          passive_interface: eth2
+        state: merged
+
+    - name: Config hostname
+      vyos.vyos.vyos_system:
+        host_name: R1        
+
+
+
+- hosts: R2
+  gather_facts: 'no'
+  
+  tasks:
+    - name: Create Loopback
+      vyos.vyos.vyos_interfaces:
+        config:
+          - name: lo
+            description: "Loopback created"
+            enabled: true
+    - name: Create Ethernet
+      vyos.vyos.vyos_interfaces:
+        config:
+          - name: eth1
+            description: "Wan Link 1"
+            enabled: true
+          - name: eth2
+            description: "Wan Link 2"
+            enabled: true
+    - name: Add IP Address
+      vyos.vyos.vyos_l3_interfaces:
+        config:
+          - name: lo
+            ipv4:
+            - address: 2.2.2.2/32
+          - name: eth1
+            ipv4:
+            - address: 50.1.1.2/30
+          - name: eth2
+            ipv4:
+            - address: 50.2.2.1/30
+    - name: Config OSPFv2
+      vyos.vyos.vyos_ospfv2:
+        config:
+          parameters:
+            router_id: 2.2.2.2
+          areas:
+            - area_id: '0'
+              network:
+              - address: 50.1.1.0/30
+              - address: 50.2.2.0/30
+              - address: 2.2.2.2/32
+        state: merged
+
+    - name: Config hostname
+      vyos.vyos.vyos_system:
+        host_name: R2        
+
+
+
+- hosts: R3
+  gather_facts: 'no'
+  
+  tasks:
+    - name: Create Loopback
+      vyos.vyos.vyos_interfaces:
+        config:
+          - name: lo
+            description: "Loopback created"
+            enabled: true
+    - name: Create Ethernet
+      vyos.vyos.vyos_interfaces:
+        config:
+          - name: eth1
+            description: "Wan Link 2"
+            enabled: true
+          - name: eth2
+            description: "Wan Link 3"
+            enabled: true
+    - name: Add IP Address
+      vyos.vyos.vyos_l3_interfaces:
+        config:
+
+          - name: lo
+            ipv4:
+            - address: 3.3.3.3/32
+          - name: eth1
+            ipv4:
+            - address: 50.2.2.2/30
+          - name: eth2
+            ipv4:
+            - address: 50.3.3.1/30
+    - name: Config OSPFv2
+      vyos.vyos.vyos_ospfv2:
+        config:
+          parameters:
+            router_id: 3.3.3.3
+          areas:
+            - area_id: '0'
+              network:
+              - address: 50.3.3.0/30
+              - address: 50.2.2.0/30
+              - address: 3.3.3.3/32
+        state: merged      
+        
+    - name: Config hostname
+      vyos.vyos.vyos_system:
+        host_name: R3
+
+
+
+- hosts: R4
+  gather_facts: 'no'
+  
+  tasks:
+    - name: Create Loopback
+      vyos.vyos.vyos_interfaces:
+        config:
+          - name: lo
+            description: "Loopback created"
+            enabled: true
+    - name: Create Ethernet
+      vyos.vyos.vyos_interfaces:
+        config:
+          - name: eth1
+            description: "Wan Link 4"
+            enabled: true
+          - name: eth2
+            description: "Lan Link"
+            enabled: true
+    - name: Add IP Address
+      vyos.vyos.vyos_l3_interfaces:
+        config:        
+          - name: lo
+            ipv4:
+            - address: 4.4.4.4/32
+          - name: eth1
+            ipv4:
+            - address: 50.3.3.2/30
+          - name: eth2
+            ipv4:
+            - address: 10.4.4.1/24
+    - name: Config OSPFv2
+      vyos.vyos.vyos_ospfv2:
+        config:
+          parameters:
+            router_id: 4.4.4.4
+          areas:
+            - area_id: '0'
+              network:
+              - address: 50.3.3.0/30
+              - address: 4.4.4.4/32
+          passive_interface: eth2
+        state: merged
+
+    - name: Config hostname
+      vyos.vyos.vyos_system:
+        host_name: R4

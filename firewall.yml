@@ -1,0 +1,263 @@
+---
+
+- hosts: [R1,R4]
+  gather_facts: 'no'
+
+  tasks:
+    - name: Create LAN Firewall rules
+      vyos.vyos.vyos_firewall_rules:
+        config:
+          - afi: ipv4
+            rule_sets: 
+              - name: LAN-WAN
+                description: IPv4 LAN -> WAN rule set
+                default_action: accept
+              - name: LAN-LOCAL
+                description: IPv4 LAN -> LOCAL rule set
+                default_action: accept
+
+    - name: Create LOCAL Firewall rules
+      vyos.vyos.vyos_firewall_rules:
+        config:
+          - afi: ipv4
+            rule_sets: 
+              - name: LOCAL-WAN
+                description: IPv4 LOCAL -> WAN rule set
+                default_action: accept
+                rules:
+                  - number: 30
+                    protocol: 'ospf'
+                    action: accept
+                    state:
+                      established: yes
+                      related: yes
+                    description: "Allow NEW Traffic"
+              - name: LOCAL-LAN
+                description: IPv4 LOCAL -> LAN rule set
+                default_action: accept
+
+    - name: Create ADMIN Firewall rules
+      vyos.vyos.vyos_firewall_rules:
+        config:
+          - afi: ipv4
+            rule_sets: 
+              - name: ADMIN-LOCAL
+                description: IPv4 ADMIN -> LOCAL rule set
+                default_action: accept
+                rules:
+                  - number: 5
+                    action: accept
+                    state:
+                      new: yes
+                    protocol: 'icmp'
+              - name: LOCAL-ADMIN
+                description: IPv4 LOCAL -> ADMIN rule set
+                default_action: accept
+
+    - name: Create Tunnel Firewall rules
+      vyos.vyos.vyos_firewall_rules:
+        config:
+          - afi: ipv4
+            rule_sets: 
+              - name: TUNNEL-LOCAL
+                description: IPv4 TUNNEL -> LOCAL rule set
+                default_action: accept
+              - name: LOCAL-TUNNEL
+                description: IPv4 LOCAL -> TUNNEL rule set
+                default_action: accept    
+
+    - name: Create WAN Firewall rules
+      vyos.vyos.vyos_firewall_rules:
+        config:
+          - afi: ipv4
+            rule_sets: 
+              - name: WAN-LOCAL
+                description: IPv4 WAN -> LOCAL rule set
+                default_action: drop
+                rules:
+                  - number: 5
+                    action: accept
+                    state:
+                      established: yes
+                      related: yes
+                    description: "Allow EST/Related Traffic"
+                  - number: 20
+                    protocol: 'icmp'
+                    state:
+                      new: yes
+                    action: accept
+                    description: "Allow NEW Traffic"
+                  - number: 30
+                    protocol: 'ospf'
+                    action: accept
+                    state:
+                      new: yes
+                    description: "Allow NEW Traffic"
+                  - number: 40
+                    ipsec: match-ipsec
+                    action: accept
+                    protocol: 'icmp'
+                  - number: 200
+                    action: accept
+                    protocol: 'esp'
+                  - number: 201
+                    action: accept
+                    protocol: udp
+                    source:
+                      port: '500'
+                    destination:
+                      port: '500'
+                  - number: 300
+                    action: accept
+                    protocol: 'gre'
+              - name: WAN-LAN
+                default_action: drop
+                description: "Allow EST/Related Traffic"
+                rules:
+                  - number: 5
+                    action: accept
+                    state:
+                      established: yes
+                      related: yes
+                  - number: 20
+                    action: accept
+                    state:
+                      new: yes
+                    protocol: 'icmp'
+        state: merged               
+
+# - hosts: [R2,R3]
+#   gather_facts: 'no'
+
+#   tasks: 
+#     - name: Create LOCAL Firewall rules
+#       vyos.vyos.vyos_firewall_rules:
+#         config:
+#           - afi: ipv4
+#             rule_sets: 
+#               - name: LOCAL-WAN
+#                 description: IPv4 LOCAL -> WAN rule set
+#                 default_action: accept
+#                 rules:
+#                   - number: 30
+#                     protocol: 'ospf'
+#                     action: accept
+#                     state:
+#                       established: yes
+#                       related: yes
+#                     description: "Allow NEW Traffic"
+#                   - number: 40
+#                     ipsec: match-ipsec
+#                     action: accept 
+
+#     - name: Create ADMIN Firewall rules
+#       vyos.vyos.vyos_firewall_rules:
+#         config:
+#           - afi: ipv4
+#             rule_sets: 
+#               - name: ADMIN-LOCAL
+#                 description: IPv4 ADMIN -> LOCAL rule set
+#                 default_action: accept
+#                 rules:
+#                   - number: 5
+#                     action: accept
+#                     state:
+#                       new: yes
+#                     protocol: 'icmp'
+#               - name: LOCAL-ADMIN
+#                 description: IPv4 LOCAL -> ADMIN rule set
+#                 default_action: accept     
+
+#     - name: Create WAN Firewall rules
+#       vyos.vyos.vyos_firewall_rules:
+#         config:
+#           - afi: ipv4
+#             rule_sets: 
+#               - name: WAN-LOCAL
+#                 description: IPv4 WAN -> LOCAL rule set
+#                 default_action: drop
+#                 rules:
+#                   - number: 5
+#                     action: accept
+#                     state:
+#                       established: yes
+#                       related: yes
+#                     description: "Allow EST/Related Traffic"
+#                   - number: 20
+#                     protocol: 'icmp'
+#                     state:
+#                       new: yes
+#                     action: accept
+#                     description: "Allow NEW Traffic"
+#                   - number: 30
+#                     protocol: 'ospf'
+#                     action: accept
+#                     state:
+#                       new: yes
+#                     description: "Allow NEW Traffic"
+#                   - number: 40
+#                     ipsec: match-ipsec
+#                     action: accept                  
+
+- hosts: [R1,R4]
+  gather_facts: 'no'
+
+  tasks:
+    - name: Zone policy
+      vyos.vyos.vyos_config:
+        lines:
+        # zone LAN
+        - set zone-policy zone LAN default-action drop
+        - set zone-policy zone LAN from WAN firewall name WAN-LAN
+        - set zone-policy zone LAN from LOCAL firewall name LOCAL-LAN
+        - set zone-policy zone LAN interface eth2
+
+        # zone LOCAL
+        - set zone-policy zone LOCAL local-zone
+        - set zone-policy zone LOCAL from TUNNEL firewall name TUNNEL-LOCAL
+        - set zone-policy zone LOCAL from ADMIN firewall name ADMIN-LOCAL
+        - set zone-policy zone LOCAL from LAN firewall name LAN-LOCAL
+        - set zone-policy zone LOCAL from WAN firewall name WAN-LOCAL
+        - set zone-policy zone LOCAL default-action drop
+
+        # zone WAN
+        - set zone-policy zone WAN from LAN firewall name LAN-WAN
+        - set zone-policy zone WAN from LOCAL firewall name LOCAL-WAN
+        - set zone-policy zone WAN interface eth1
+        - set zone-policy zone WAN default-action drop
+
+        # zone ADMIN
+        - set zone-policy zone ADMIN default-action drop
+        - set zone-policy zone ADMIN from LOCAL firewall name LOCAL-ADMIN
+        - set zone-policy zone ADMIN interface eth0
+
+        # zone Tunnel
+        - set zone-policy zone TUNNEL default-action drop
+        - set zone-policy zone TUNNEL from LOCAL firewall name LOCAL-TUNNEL
+        - set zone-policy zone TUNNEL interface tun0
+        save: yes
+
+# - hosts: [R2,R3]
+#   gather_facts: 'no'
+
+#   tasks:
+#     - name: Zone policy
+#       vyos.vyos.vyos_config:
+#         lines:
+#         # zone LOCAL
+#         - set zone-policy zone LOCAL local-zone
+#         - set zone-policy zone LOCAL from ADMIN firewall name ADMIN-LOCAL
+#         - set zone-policy zone LOCAL from WAN firewall name WAN-LOCAL
+#         - set zone-policy zone LOCAL default-action drop
+
+#         # zone WAN
+#         - set zone-policy zone WAN from LOCAL firewall name LOCAL-WAN
+#         - set zone-policy zone WAN interface eth1
+#         - set zone-policy zone WAN interface eth2
+#         - set zone-policy zone WAN default-action drop
+
+#         # zone ADMIN
+#         - set zone-policy zone ADMIN default-action drop
+#         - set zone-policy zone ADMIN from LOCAL firewall name LOCAL-ADMIN
+#         - set zone-policy zone ADMIN interface eth0        
+#         save: yes

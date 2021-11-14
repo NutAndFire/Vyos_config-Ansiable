@@ -1,0 +1,27 @@
+---
+
+- hosts: all
+  gather_facts: 'no'
+
+  tasks:
+    - name: Delete Loopback & hostname
+      vyos.vyos.vyos_config:
+        lines:
+        - delete interfaces loopback
+        - delete system host-name
+        - delete interfaces ethernet eth1
+        - delete interfaces ethernet eth2
+        - delete protocols ospf
+        - delete interfaces tunnel tun0
+
+        - delete vpn ipsec
+        - delete firewall name
+        - delete zone-policy zone
+        save: yes
+
+        - delete vpn
+        - delete firewall
+        - delete zone-policy
+        save: yes
+        
+

@@ -1,0 +1,10 @@
+---
+
+- hosts: all
+  gather_facts: 'no'
+
+  tasks:
+    - name: Shutdown routers
+      vyos.vyos.vyos_command:
+        commands: 
+          - poweroff now

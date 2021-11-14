@@ -1,0 +1,51 @@
+---
+
+- hosts: R1
+  gather_facts: 'no'
+
+  tasks:
+    - name: Config GRE over IPSec on R1
+      vyos.vyos.vyos_config:
+        lines:
+        - set interfaces tunnel tun0 encapsulation gre
+        - set interfaces tunnel tun0 source-address 50.1.1.1
+        - set interfaces tunnel tun0 remote 50.3.3.2
+        - set interfaces tunnel tun0 address 10.10.10.1/30
+        - set vpn ipsec interface eth1
+        - set vpn ipsec ike-group MyIKEGroup proposal 1 dh-group '2'
+        - set vpn ipsec ike-group MyIKEGroup proposal 1 encryption 'aes128'
+        - set vpn ipsec ike-group MyIKEGroup proposal 1 hash 'sha1'
+        - set vpn ipsec esp-group MyESPGroup proposal 1 encryption 'aes128'
+        - set vpn ipsec esp-group MyESPGroup proposal 1 hash 'sha1'
+        - set vpn ipsec site-to-site peer 50.3.3.2 authentication mode pre-shared-secret
+        - set vpn ipsec site-to-site peer 50.3.3.2 authentication pre-shared-secret WHOWANTSTOKNOW
+        - set vpn ipsec site-to-site peer 50.3.3.2 ike-group MyIKEGroup
+        - set vpn ipsec site-to-site peer 50.3.3.2 default-esp-group MyESPGroup
+        - set vpn ipsec site-to-site peer 50.3.3.2 local-address 50.1.1.1
+        - set vpn ipsec site-to-site peer 50.3.3.2 tunnel 1 protocol gre
+        save: yes
+
+- hosts: R4
+  gather_facts: 'no'
+
+  tasks:
+    - name: Config GRE over IPSec on R4
+      vyos.vyos.vyos_config:
+        lines:
+        - set interfaces tunnel tun0 encapsulation gre
+        - set interfaces tunnel tun0 source-address 50.3.3.2
+        - set interfaces tunnel tun0 remote 50.1.1.1
+        - set interfaces tunnel tun0 address 10.10.10.2/30
+        - set vpn ipsec interface eth1
+        - set vpn ipsec ike-group MyIKEGroup proposal 1 dh-group '2'
+        - set vpn ipsec ike-group MyIKEGroup proposal 1 encryption 'aes128'
+        - set vpn ipsec ike-group MyIKEGroup proposal 1 hash 'sha1'
+        - set vpn ipsec esp-group MyESPGroup proposal 1 encryption 'aes128'
+        - set vpn ipsec esp-group MyESPGroup proposal 1 hash 'sha1'
+        - set vpn ipsec site-to-site peer 50.1.1.1 authentication mode pre-shared-secret
+        - set vpn ipsec site-to-site peer 50.1.1.1 authentication pre-shared-secret WHOWANTSTOKNOW
+        - set vpn ipsec site-to-site peer 50.1.1.1 ike-group MyIKEGroup
+        - set vpn ipsec site-to-site peer 50.1.1.1 default-esp-group MyESPGroup
+        - set vpn ipsec site-to-site peer 50.1.1.1 local-address 50.3.3.2
+        - set vpn ipsec site-to-site peer 50.1.1.1 tunnel 1 protocol gre
+        save: yes
